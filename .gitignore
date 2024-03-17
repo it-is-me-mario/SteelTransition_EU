@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Database folders
+Exiobase HYBRID 2011/
+Database/
+
 # C extensions
 *.so
 
