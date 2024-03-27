@@ -7,6 +7,11 @@ __pycache__/
 Exiobase HYBRID 2011/
 Database/
 
+# Merged results
+Results/Prices.csv 
+Results/GHG_Footprints_act.csv 
+Results/GHG_Footprints_com.csv 
+
 # C extensions
 *.so
 

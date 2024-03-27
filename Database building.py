@@ -1,34 +1,20 @@
 #%% Import dependencies
-
 import mario
 import pandas as pd
-from support import add_new_supply_chains
-
-paths = {
-    "Exiobase": "Exiobase HYBRID 2011",
-    "Aggregations": "Aggregations",
-    "Ember": r"Ember - data/EE mixes Ember-Exiobase.xlsx",
-    "Add sectors": "Add sectors",
-    "Database": "Database",
-    'Hydrogen supply chains': {
-        'Map': r'Add sectors/2. New supply chains - Map.xlsx',
-        'commodities': r'Add sectors/2. New supply chains - Commodities.xlsx',
-        'activities': r'Add sectors/2. New supply chains - Activities.xlsx',
-        'values': r'Add sectors/2. New supply chains - Values.xlsx',
-        }
-    }
+from Support import add_new_supply_chains
 
 nowcasting_year = 2022
+path_exiobase = "Database/Exiobase HYBRID 2011"
 
 #%% parsing raw exiobase
-world = mario.parse_from_txt(path=paths['Exiobase'], table='SUT', mode='flows')
+world = mario.parse_from_txt(path=path_exiobase, table='SUT', mode='flows')
 
 #%% nowcasting electricity mixes with Ember data (https://ember-climate.org/data/data-tools/data-explorer)
 #   step 1: aggregate electricity commodities and activities to match Ember
-world.aggregate(paths["Aggregations"]+"/1. Nowcasting.xlsx",ignore_nan=True)
+world.aggregate("Aggregations/1. Nowcasting.xlsx",ignore_nan=True)
 
 # step 2: parse Ember data, already aggregated matching Exiobase regions 
-ee_mixes = pd.read_excel(paths['Ember'],sheet_name=str(nowcasting_year),index_col=[0])
+ee_mixes = pd.read_excel("Database/Ember - data/EE mixes Ember-Exiobase.xlsx" ,sheet_name=str(nowcasting_year),index_col=[0])
 
 # step 3: appyling changes to use matrix
 z = world.z
@@ -58,9 +44,8 @@ z.update(u)
 world.update_scenarios('baseline',z=z,Y=Y)
 world.reset_to_coefficients('baseline')
 
-
 #%% aggregating regions and electricity commodities furthermore
-world.aggregate(paths["Aggregations"]+"/2. Regions&EE.xlsx",ignore_nan=True)
+world.aggregate("Aggregations/2. Regions&EE.xlsx",ignore_nan=True)
 
 #%% splitting "BF-BOF" to disjoint its byproducts from the main product
 new_activity = 'Blast furnace gas production'
@@ -68,7 +53,7 @@ main_activity = 'Manufacture of basic iron and steel and of ferro-alloys and fir
 by_products = ['Blast Furnace Gas', 'Oxygen Steel Furnace Gas']
 
 world.add_sectors(
-    paths["Add sectors"]+"/1. Disjoint BF-BOF by-products.xlsx", 
+    "Add sectors/1. Disjoint BF-BOF by-products.xlsx", 
     new_sectors=[new_activity], 
     regions=world.get_index('Region'),
     item='Activity',
@@ -112,19 +97,22 @@ z.update(s)
 world.update_scenarios('baseline',z=z,e=e)
 world.reset_to_coefficients('baseline')
 
-#%% exporting 0.1 baseline database
-world.to_txt(paths['Database']+"/0.1. Baseline", flows=False, coefficients=True)
+#%% adding new supply chains
+paths_new_supply_chains = {
+    'Map': r'Add sectors/2. New supply chains - Map.xlsx',
+    'commodities': r'Add sectors/2. New supply chains - Commodities.xlsx',
+    'activities': r'Add sectors/2. New supply chains - Activities.xlsx',
+    'values': r'Add sectors/2. New supply chains - Values.xlsx',
+    }
 
-#%%
-world = mario.parse_from_txt(paths['Database']+"/0.1. Baseline/coefficients", mode='coefficients', table='SUT')
-
-#%% adding hydrogen supply chains
 add_new_supply_chains(
-    paths = paths['Hydrogen supply chains'], 
+    paths = paths_new_supply_chains, 
     main_sheet='main', 
-    world=world
+    world=world,
+    add_sectors_template=True,
     )
 
-
+#%% exporting baseline
+world = mario.parse_from_txt("Database/Baseline model/coefficients", mode='coefficients', table='SUT')
 
 

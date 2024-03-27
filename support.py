@@ -1,7 +1,5 @@
 #%%
-import mario
 import pandas as pd
-import os
 
 sN=slice(None)
 
@@ -18,18 +16,14 @@ def get_new_sets(set_map,main_sheet,db):
             parented_activities += [act]
     
     # excluding already existing activities    
-    for act in new_activities:
-        if act in db.get_index('Activity'):
-            new_activities.remove(act)
+    new_activities = [x for x in new_activities if x not in db.get_index('Activity')]
 
     # excluding parented activities    
     for act in parented_activities:
         new_activities.remove(act)
 
     # excluding already existing commodities            
-    for com in new_commodities:
-        if com in db.get_index('Commodity'):
-            new_commodities.remove(com)
+    new_commodities = [x for x in new_commodities if x not in db.get_index('Commodity')]
     
     return new_activities,new_commodities,parented_activities
     
@@ -217,5 +211,62 @@ def add_new_supply_chains(
         
     world.to_txt(paths['Database']+"/1. Baseline final", flows=False, coefficients=True, scenario=scenario)
         
+#%% scenarios functions
+
+def update_mix_u(world,new_mix,scenario,region):
+
+    z = world.get_data('z',scenarios=scenario)[scenario][0]
+    u = world.get_data('u',scenarios=scenario)[scenario][0]
+    Y = world.get_data('Y',scenarios=scenario)[scenario][0]
+
+    # update u
+    u_ee = u.loc[(region,slice(None),list(new_mix.index)),:]
+    u_ee.sort_index(level=-1,inplace=True) 
+    u_ee_sum = u_ee.sum().to_frame().T
+    new_u_ee = pd.DataFrame(new_mix.values @ u_ee_sum.values, index=u_ee.index, columns=u_ee.columns)
+    u.update(new_u_ee)
+
+    # update Y
+    Y_ee = Y.loc[(region,'Commodity',list(new_mix.index)),:]
+    Y_ee.sort_index(level=-1,inplace=True) 
+    Y_ee_sum = Y_ee.sum().to_frame().T
+    new_Y_ee = pd.DataFrame(new_mix.values @ Y_ee_sum.values, index=Y_ee.index, columns=Y_ee.columns)
+    Y.update(new_Y_ee)
+
+    z.update(u)
+
+    # update mario database  
+    world.update_scenarios(scenario,z=z,Y=Y)
+    world.reset_to_coefficients(scenario)
+    
+#%%
+def CCUS(world,route,value,region,scenario,sat='CO2'):
+    
+    e = world.get_data('e',scenarios=scenario)[scenario][0]
+    e.loc[sat,(region,'Activity',route)] *= value
                 
-        
+    world.update_scenarios(scenario,e=e)
+    world.reset_to_coefficients(scenario)
+
+#%%
+def H2inj_mix(world,h2_from,h2_to,route,region,scenario):
+    
+    z = world.get_data('z',scenarios=scenario)[scenario][0]
+    sumH2 = z.loc[(region,'Commodity',[h2_from,h2_to]),(region,'Activity',route)].sum().sum()
+    z.loc[(region,'Commodity',h2_from),(region,'Activity',route)] = 0
+    z.loc[(region,'Commodity',h2_to),(region,'Activity',route)] = sumH2
+    
+    world.update_scenarios(scenario,z=z)
+    world.reset_to_coefficients(scenario)
+    
+#%%
+def inj_change(world,commodities,values,routes,region,scenario):
+
+    z = world.get_data('z',scenarios=scenario)[scenario][0]
+    for route in routes:
+        for commodity in commodities:
+            z.loc[(region,'Commodity',commodity),(region,'Activity',route)] = values[commodities.index(commodity)]
+    
+    world.update_scenarios(scenario,z=z)
+    world.reset_to_coefficients(scenario)
+    
