@@ -1,4 +1,4 @@
-#%% Import dependencies
+#%% CELL 1: Importing dependencies and setting up the environment
 import mario
 import pandas as pd
 from Support import add_new_supply_chains
@@ -6,13 +6,14 @@ from Support import add_new_supply_chains
 nowcasting_year = 2022
 path_exiobase = "Database/Exiobase HYBRID 2011"
 
-#%% parsing raw exiobase
+#%% CELL 2: Parsing Exiobase data
 world = mario.parse_from_txt(path=path_exiobase, table='SUT', mode='flows')
 
-#%% nowcasting electricity mixes with Ember data (https://ember-climate.org/data/data-tools/data-explorer)
+#%% CELL 3: nowcasting electricity mixes with Ember data (https://ember-climate.org/data/data-tools/data-explorer)
 #   step 1: aggregate electricity commodities and activities to match Ember
 world.aggregate("Aggregations/1. Nowcasting.xlsx",ignore_nan=True)
 
+#%% CELL 4: nowcasting electricity mixes with Ember data (https://ember-climate.org/data/data-tools/data-explorer)
 # step 2: parse Ember data, already aggregated matching Exiobase regions 
 ee_mixes = pd.read_excel("Database/Ember - data/EE mixes Ember-Exiobase.xlsx" ,sheet_name=str(nowcasting_year),index_col=[0])
 
@@ -44,10 +45,10 @@ z.update(u)
 world.update_scenarios('baseline',z=z,Y=Y)
 world.reset_to_coefficients('baseline')
 
-#%% aggregating regions and electricity commodities furthermore
+#%% CELL 5: aggregating regions and electricity commodities furthermore
 world.aggregate("Aggregations/2. Regions&EE.xlsx",ignore_nan=True)
 
-#%% splitting "BF-BOF" to disjoint its byproducts from the main product
+#%% CELL 6: splitting "BF-BOF" to disjoint its byproducts from the main product
 new_activity = 'Blast furnace gas production'
 main_activity = 'Manufacture of basic iron and steel and of ferro-alloys and first products thereof' 
 by_products = ['Blast Furnace Gas', 'Oxygen Steel Furnace Gas']
@@ -97,7 +98,8 @@ z.update(s)
 world.update_scenarios('baseline',z=z,e=e)
 world.reset_to_coefficients('baseline')
 
-#%% adding new supply chains
+
+#%% CELL 7: adding new supply chains
 paths_new_supply_chains = {
     'Map': r'Add sectors/2. New supply chains - Map.xlsx',
     'commodities': r'Add sectors/2. New supply chains - Commodities.xlsx',
@@ -112,7 +114,4 @@ add_new_supply_chains(
     add_sectors_template=True,
     )
 
-#%% exporting baseline
-world = mario.parse_from_txt("Database/Baseline model/coefficients", mode='coefficients', table='SUT')
-
-
+# %%

@@ -9,12 +9,6 @@ world = mario.parse_from_txt("Database/Baseline model/coefficients", mode='coeff
 aggr_activities = pd.read_excel("Aggregations/3. Plots.xlsx",sheet_name="Activity",index_col=[0])
 aggr_activities = aggr_activities.to_dict()
 
-#%%
-steel = world.search('Activity','steel')
-cement = world.search('Activity','cement')
-
-e = world.e.loc[:,('EU','Activity', steel+cement)]
-
 #%% scenarios
 
 # list years, scenarios and sensitivities to perform on each scenario
@@ -174,4 +168,4 @@ for year,scenarios in taxonomy.items():
             f_com.to_csv(f"Results/GHG_Footprints_com/{scemario_name}.csv", index=False)
                 
                 
-
+# %%

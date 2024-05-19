@@ -60,7 +60,6 @@ def parent_parented(db,set_map,main_sheet,parented_activities):
 def fill_u(activities,set_map,main_sheet,db,world,region_maps,sheet_to_fill):
     
     for act in activities:
-        print(act)
         act_sheets = set_map[main_sheet].query("Activity==@act")['Sheet_name'].to_list()
         
         for sheet in act_sheets:
@@ -96,13 +95,18 @@ def fill_u(activities,set_map,main_sheet,db,world,region_maps,sheet_to_fill):
                 'row region': inputs_db[f'{db} Region'],
                 'row level': ['Commodity' for r in inputs_db.index],
                 'row sector': inputs_db[f'{db} Commodity'],
-                'column region': [set_map[main_sheet].query("Activity==@act & Sheet_name==@sheet")['Region'].values[0] for r in inputs_db.index],
+                # 'column region': [set_map[main_sheet].query("Activity==@act & Sheet_name==@sheet")['Region'].values[0] for r in inputs_db.index],
                 'column level': ['Activity' for r in inputs_db.index],
                 'column sector': [act for r in inputs_db.index],
                 'type': [inputs_db.iloc[r,list(inputs_db.columns).index('Type')] for r in inputs_db.index],
                 'value': inputs_db['quantity'],
                 }
-            
+
+            u['column region'] = []
+            for r in inputs_db.index:
+                u['column region'] += [set_map[main_sheet].query("Activity==@act & Sheet_name==@sheet")['Region'].values[0]]
+
+
             sheet_to_fill = pd.concat([sheet_to_fill, pd.DataFrame(u)],axis=0)
         
     return sheet_to_fill
@@ -119,14 +123,17 @@ def fill_e(activities,set_map,main_sheet,db,world,region_maps,sheet_to_fill):
     
             e = {
                 'row sector': inputs_db[f'{db} Commodity'],
-                'column region': [set_map[main_sheet].query("Activity==@act & Sheet_name==@sheet")['Region'].values[0] for r in inputs_db.index],
+                # 'column region': [set_map[main_sheet].query("Activity==@act & Sheet_name==@sheet")['Region'].values[0] for r in inputs_db.index],
                 'column level': ['Activity' for r in inputs_db.index],
                 'column sector': [act for r in inputs_db.index],
                 'type': inputs_db['Type'].to_list(),
                 'value': inputs_db['quantity'],
                 }
-            print(act)
-            
+
+            e['column region'] = []
+            for r in inputs_db.index:
+                e['column region'] += [set_map[main_sheet].query("Activity==@act & Sheet_name==@sheet")['Region'].values[0]]
+
             sheet_to_fill = pd.concat([sheet_to_fill, pd.DataFrame(e)], axis=0)
     
     return sheet_to_fill
@@ -209,7 +216,7 @@ def add_new_supply_chains(
     
     world.shock_calc(paths['values'],z=True,e=True,scenario=scenario)
         
-    world.to_txt(paths['Database']+"/1. Baseline final", flows=False, coefficients=True, scenario=scenario)
+    world.to_txt(r"Database/Baseline model", flows=False, coefficients=True, scenario=scenario)
         
 #%% scenarios functions
 
